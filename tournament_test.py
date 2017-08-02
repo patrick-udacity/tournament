@@ -83,6 +83,7 @@ def testReportMatches():
     [id1, id2, id3, id4] = [row[0] for row in standings]
     reportMatch(id1, id2)
     reportMatch(id3, id4)
+ 
     standings = playerStandings()
     for (i, n, w, m) in standings:
         if m != 1:
@@ -149,7 +150,7 @@ def testPairings():
 
 if __name__ == '__main__':
     testCount()
-    #testStandingsBeforeMatches()
-    #testReportMatches()
+    testStandingsBeforeMatches()
+    testReportMatches()
     #testPairings()
     print "Success!  All tests pass so far!"

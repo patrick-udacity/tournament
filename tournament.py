@@ -14,9 +14,19 @@ def connect():
 
 def deleteMatches():
     """Remove all the match records from the database."""
-    query = ("DELETE FROM MATCHES;")
     DB, c = connect()
+    #First - remove the associated records from the all_match_results table.
+    query = ("DELETE FROM ALL_MATCH_RESULTS;")
     c.execute(query,)
+    #Now delete the Matches.
+    query = ("DELETE FROM MATCHES;")
+    c.execute(query,)
+    #Finally, zero out player_standings.
+    query = ("UPDATE PLAYER_STANDINGS SET WINS = 0,"
+             "MATCHES_PLAYED = 0;"
+    )
+    c.execute(query,)    
+    
     DB.commit()
     DB.close()
     return
@@ -24,9 +34,13 @@ def deleteMatches():
 
 
 def deletePlayers():
+    DB, c = connect()
+    query = ("DELETE FROM PLAYER_STANDINGS;")
+    c.execute(query,)
+    DB.commit()
+    
     """Remove all the player records from the database."""
     query = ("DELETE FROM PLAYERS;")
-    DB, c = connect()
     c.execute(query,)
     DB.commit()
     DB.close()
@@ -67,14 +81,13 @@ def registerPlayer(name):
 
     #Add the player to player_standings table with no wins or matches.
     query = ("INSERT INTO player_standings (player_id, player_name, wins, matches_played) "
-        "VALUES (%s) "
-        "RETURNING player_id")
+        "VALUES (%s, %s, %s, %s)")
 
-    param = (int(id), str(name), int(0), int(0),)
+    param = (id, name, 0, 0)
     c.execute(query, param)    
     DB.commit()
     DB.close()
-    return id
+    return int(id)
 
 
 def playerStandings():
@@ -90,7 +103,13 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
-
+    query = (" SELECT * FROM PLAYER_STANDINGS ORDER BY WINS DESC;")
+    DB, c = connect()
+    c.execute(query,)
+    result = c.fetchall()
+    DB.commit()
+    DB.close()
+    return result  
 
 def reportMatch(winner, loser):
     """Records the outcome of a single match between two players.
@@ -99,8 +118,42 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
- 
- 
+
+    #First Step: Add the match and retrieve the match_id.
+    query = ("INSERT INTO MATCHES VALUES(DEFAULT, DEFAULT)RETURNING match_id;")
+    DB, c = connect()
+    c.execute(query,)
+    newMatchID = c.fetchone()[0]
+    DB.commit()
+
+
+    #Second Step: Add the winner to the 'All_Match_Results'
+    query = ("INSERT INTO ALL_MATCH_RESULTS VALUES(%s, %s, %s);")
+    param = (winner, newMatchID, "won")
+    c.execute(query, param)
+    #Update status in Player_Standings.
+    #Retrieve the current wins and matches_played
+    query = ("UPDATE PLAYER_STANDINGS SET WINS = WINS + 1,"
+             "MATCHES_PLAYED = MATCHES_PLAYED + 1 WHERE PLAYER_ID = %s;"
+             % winner
+    )
+    param = (winner)
+    c.execute(query, param)
+
+    #Third Step: Add the loser of the match to the 'All_Match_Results' table.
+    query = ("INSERT INTO ALL_MATCH_RESULTS VALUES(%s, %s, %s);")
+    param = (loser, newMatchID, "lost")
+    c.execute(query, param)
+    #Update status in Player_Standings.
+    #Retrieve the current wins and matches_played
+    query = ("UPDATE PLAYER_STANDINGS SET "
+             "MATCHES_PLAYED = MATCHES_PLAYED + 1 WHERE PLAYER_ID = %s;"
+             % loser
+    )
+    param = (loser)
+    c.execute(query, param)    
+    DB.commit()
+    DB.close()    
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
   

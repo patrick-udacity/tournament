@@ -50,7 +50,7 @@ CREATE TABLE all_match_results  (
 CREATE TABLE player_standings (
     player_id int REFERENCES players(player_id),
     player_name text,
-    wins INTEGER DEFAULT 0,
-    matches_played INTEGER DEFAULT 0
+    wins int DEFAULT 0,
+    matches_played int DEFAULT 0
 );
 
