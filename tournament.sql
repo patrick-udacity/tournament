@@ -32,8 +32,7 @@ CREATE TABLE players (
 ); 
 
 CREATE TABLE matches (
-    match_id serial PRIMARY KEY,
-    match_date TIMESTAMP DEFAULT NOW()
+    match_id serial PRIMARY KEY
 );
 
 -- type used for playerStandings table

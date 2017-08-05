@@ -7,7 +7,8 @@ import psycopg2
 
 
 def connect():
-    """Connect to the PostgreSQL database.  Returns a database connection and cursor."""
+    """Connect to the PostgreSQL database.
+        Returns a database connection and cursor."""
     DB = psycopg2.connect("dbname=tournament")
     c = DB.cursor()
     return DB, c
@@ -80,8 +81,10 @@ def registerPlayer(name):
     id = c.fetchall()[0][0]
 
     #Add the player to player_standings table with no wins or matches.
-    query = ("INSERT INTO player_standings (player_id, player_name, wins, matches_played) "
-        "VALUES (%s, %s, %s, %s)")
+    query = ("INSERT INTO player_standings (player_id, "
+        "player_name, wins, matches_played) "
+        "VALUES (%s, %s, %s, %s)"
+    )
 
     param = (id, name, 0, 0)
     c.execute(query, param)    
@@ -120,7 +123,7 @@ def reportMatch(winner, loser):
     """
 
     #First Step: Add the match and retrieve the match_id.
-    query = ("INSERT INTO MATCHES VALUES(DEFAULT, DEFAULT)RETURNING match_id;")
+    query = ("INSERT INTO MATCHES VALUES(DEFAULT)RETURNING match_id;")
     DB, c = connect()
     c.execute(query,)
     newMatchID = c.fetchone()[0]
@@ -153,7 +156,9 @@ def reportMatch(winner, loser):
     param = (loser)
     c.execute(query, param)    
     DB.commit()
-    DB.close()    
+    DB.close()
+    return
+
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
   
@@ -169,5 +174,15 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+    #Retrieve player standings, sorted in wins desc order.
+    standings = playerStandings()
+    matchPairings = []
+
+    for i in range(0, len(standings), 2):
+        #Build the tuple.
+        matchPairings.append((standings[i][0], standings[i][1],
+                        standings[i+1][0], standings[i+1][1]))
+    return matchPairings
+        
 
 
